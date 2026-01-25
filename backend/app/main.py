@@ -1,13 +1,28 @@
 from fastapi import FastAPI, WebSocket
 from app.api.ws.devices import device_ws
+import asyncio
+from contextlib import asynccontextmanager
+from app.core.scheduler import offline_monitor_loop
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # This runs when the server starts
+    task = asyncio.create_task(offline_monitor_loop())
+    print("Startup: Offline monitor loop started.")
+    
+    yield  # The application runs while stuck here
+    
+    # This runs when the server stops
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        print("Shutdown: Offline monitor loop stopped.")
+
+app = FastAPI(lifespan=lifespan)
 
 @app.websocket("/ws/device")
 async def ws_service(websocket : WebSocket):
     await device_ws(websocket)
     
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
