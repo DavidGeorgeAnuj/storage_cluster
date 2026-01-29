@@ -3,6 +3,7 @@ from app.api.ws.devices import device_ws
 import asyncio
 from contextlib import asynccontextmanager
 from app.core.scheduler import offline_monitor_loop
+from app.api.routes.devices import router as device_router
 
 
 @asynccontextmanager
@@ -20,7 +21,10 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         print("Shutdown: Offline monitor loop stopped.")
 
+
 app = FastAPI(lifespan=lifespan)
+app.include_router(device_router)
+
 
 @app.websocket("/ws/device")
 async def ws_service(websocket : WebSocket):
