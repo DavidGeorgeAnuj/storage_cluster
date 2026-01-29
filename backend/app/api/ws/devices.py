@@ -15,13 +15,15 @@ async def device_ws(websocket: WebSocket):
             print("Received:", data)
 
             device_id = data.get("device_id")
+            available_storage = data.get("available_storage")
+
             if device_id is None:
                 await websocket.send_json({"error": "device_id required"})
                 continue
 
             db = SessionLocal()
             try:
-                handle_heartbeat(db, device_id)
+                handle_heartbeat(db, device_id, available_storage)
             except Exception as e:
                 db.rollback()
                 traceback.print_exc()
@@ -35,6 +37,5 @@ async def device_ws(websocket: WebSocket):
         print("WS disconnected cleanly")
 
     except Exception:
-        # THIS is what was missing
         traceback.print_exc()
         await websocket.close()
