@@ -1,6 +1,3 @@
-#when Given a file_id, the following fucntion will reliably reconstruct the file by 
-# fetching chunks from ACTIVE replicas only.
-
 
 from app.models.chunk import Chunk
 from app.models.chunk_replication import ChunkReplication
@@ -62,6 +59,7 @@ def retrieve_file(db, file_id):
         .order_by(Chunk.chunk_index)
         .all()
     )
+    # Retrieve each chunk and collect encrypted data
 
     encrypted_chunks = []
 
