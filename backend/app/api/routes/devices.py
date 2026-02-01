@@ -9,6 +9,10 @@ from app.models.chunk import Chunk
 from pydantic import BaseModel
 from typing import List
 from app.core.database import get_db
+from fastapi import UploadFile, File
+import os
+from app.services.distribute_chunk import distribute_chunk
+import hashlib
 
 router = APIRouter()
 
@@ -68,44 +72,38 @@ async def initialize_upload(payload: FileUploadInit, db: Session = Depends(get_d
         "message": "Metadata saved. You can now start sending chunks."
     }
 
-
-from fastapi import UploadFile, File
-import os
-
-TEMP_STORAGE_PATH = "./temp_chunks"
-os.makedirs(TEMP_STORAGE_PATH, exist_ok=True)
-
-@router.post("/files/{file_id}/upload-data")
-async def upload_file_data(
+@router.post("/files/{file_id}/chunks/{chunk_index}")
+async def upload_chunk_data(
     file_id: int, 
+    chunk_index: int,
     file: UploadFile = File(...), 
     db: Session = Depends(get_db)
 ):
-    # 1. Verify the file exists in DB
-    db_file = db.query(FileModel).filter(FileModel.file_id == file_id).first()
-    if not db_file:
-        raise HTTPException(status_code=404, detail="File not found")
+    # 1. Find the chunk metadata we created in /init
+    db_chunk = db.query(Chunk).filter(
+        Chunk.file_id == file_id, 
+        Chunk.chunk_index == chunk_index
+    ).first()
 
-    # 2. Read the binary content
-    content = await file.read()
+    if not db_chunk:
+        raise HTTPException(status_code=404, detail="Chunk metadata not found")
+
+    # 2. Read the encrypted bytes
+    chunk_data = await file.read()
     
-    # 3. Slice and Save Chunks locally
-    # We calculate size. (Total size / num_chunks)
-    chunk_size = len(content) // db_file.num_chunks
-    
-    for i in range(db_file.num_chunks):
-        start = i * chunk_size
-        end = start + chunk_size if i < db_file.num_chunks - 1 else len(content)
-        chunk_data = content[start:end]
-        
-        # Save to disk so phones can download it later
-        # Find the chunk_id from DB for this index
-        db_chunk = db.query(Chunk).filter(
-            Chunk.file_id == file_id, 
-            Chunk.chunk_index == i
-        ).first()
+    # 3. Integrity Check: Does the hash match what the phone promised in /init?
+    actual_hash = hashlib.sha256(chunk_data).hexdigest()
+    if actual_hash != db_chunk.chunk_hash:
+        raise HTTPException(status_code=400, detail="Integrity check failed: Hash mismatch")
 
-        with open(f"{TEMP_STORAGE_PATH}/chunk_{db_chunk.chunk_id}.bin", "wb") as f:
-            f.write(chunk_data)
+    # 4. Save locally temporarily
+    path = f"./temp_chunks/chunk_{db_chunk.chunk_id}.bin"
+    with open(path, "wb") as f:
+        f.write(chunk_data)
 
-    return {"status": "success", "message": "Chunks prepared on server."}
+    # 5. TRIGGER REPLICATION
+    # Now that this specific chunk is safe on the server, 
+    # we tell the cluster to come get it.
+    await distribute_chunk(db, db_chunk)
+
+    return {"status": "success", "chunk_id": db_chunk.chunk_id}

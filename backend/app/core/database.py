@@ -9,7 +9,7 @@ def get_db():
         db.close()
 
 DATABASE_URL = (
-    "mysql+mysqlconnector://storage_user:1234@localhost/phone_storage"
+    "mysql+mysqlconnector://storage_user:1234@localhost/phone_storage"
 )
 
 engine = create_engine(
