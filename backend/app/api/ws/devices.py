@@ -5,6 +5,7 @@ import logging
 from app.models.device import Device
 from app.core.database import SessionLocal
 from app.core.connection_manager import manager 
+from app.models.chunk_replication import ChunkReplication
 
 logger = logging.getLogger("uvicorn")
 
@@ -71,6 +72,21 @@ async def device_ws(ws: WebSocket):
             elif msg["type"] == "cmd_ack":
                 # Device confirms it received a  command
                 print(f"Device {device.device_id} is processing {msg['task_id']}")
+
+            elif msg["type"] == "CHUNK_STORED_SUCCESS":
+                chunk_id = msg.get("chunk_id")
+                
+                # 1. Find the replication record for this specific device and chunk
+                replication_entry = db.query(ChunkReplication).filter(
+                    ChunkReplication.chunk_id == chunk_id,
+                    ChunkReplication.device_id == current_device_id # device_id from the WS session
+                ).first()
+
+                if replication_entry:
+                    # 2. Upgrade status to ACTIVE
+                    replication_entry.replica_status = "ACTIVE"
+                    db.commit()
+                    print(f"Chunk {chunk_id} is now ACTIVE on Device {current_device_id}")
             
 
     except WebSocketDisconnect:
