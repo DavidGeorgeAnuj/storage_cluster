@@ -1,9 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = (
-    "mysql+mysqlconnector://storage_user:1234@localhost/phone_storage"
-)
+
+DATABASE_URL = ("mysql+mysqlconnector://storage_user:1234@127.0.0.1:3306/phone_storage")
 
 engine = create_engine(
     DATABASE_URL,
