@@ -18,3 +18,5 @@ class Device(Base):
     last_heartbeat = Column(DateTime, nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())
+
+    mode = Column(Enum("User", "Cluster"), nullable=False)

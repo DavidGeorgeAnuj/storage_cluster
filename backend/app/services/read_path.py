@@ -70,4 +70,4 @@
 
 #     return encrypted_chunks
 
-
+# def retrieve_and_decrypt_file(db, file_id, decryption_key):
