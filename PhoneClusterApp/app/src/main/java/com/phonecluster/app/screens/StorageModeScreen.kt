@@ -13,6 +13,7 @@ import com.phonecluster.app.storage.PreferencesManager
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import com.phonecluster.app.utils.heartbeat.HeartbeatManager
+import com.phonecluster.app.utils.websocket.WebSocketManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,24 +27,24 @@ fun StorageModeScreen(onBackClick: () -> Unit = {}) {
                 serverBaseUrl = "http://10.0.2.2:8000",
                 deviceId = deviceId
             )
+            WebSocketManager.connect(
+                context = context,
+                serverIp = "10.124.156.168"
+            )
         }
     }
 
     DisposableEffect(Unit) {
         onDispose {
             HeartbeatManager.stop()
+            WebSocketManager.disconnect()
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Storage Mode") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                }
+                title = { Text("Storage Mode") }
             )
         }
     ) { padding ->
