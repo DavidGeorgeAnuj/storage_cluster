@@ -23,7 +23,7 @@ fun StorageModeScreen(onBackClick: () -> Unit = {}) {
     LaunchedEffect(Unit) {
         if (deviceId != -1) {
             HeartbeatManager.start(
-                serverBaseUrl = "http://10.189.17.12:8000",
+                serverBaseUrl = "http://10.0.2.2:8000",
                 deviceId = deviceId
             )
         }
