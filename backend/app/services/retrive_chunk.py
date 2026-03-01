@@ -2,6 +2,9 @@ from app.models.chunk_replication import ChunkReplication
 from app.models.device import Device
 import hashlib
 from app.services.retrive_chunk import init_chunk_wait, wait_for_chunk
+from app.core.constants import SERVER_BASE_URL
+
+
 
 async def retrieve_chunk(db, chunk, manager):
     replicas = (
@@ -37,7 +40,7 @@ async def retrieve_chunk(db, chunk, manager):
                 "PUSH_CHUNK",
                 {
                     "chunk_id": chunk.chunk_id,
-                    "target_url": f"http://server/internal/ingest/{chunk.chunk_id}"
+                    "target_url": f"{SERVER_BASE_URL}/internal/ingest/{chunk.chunk_id}"
                 }
             )
 

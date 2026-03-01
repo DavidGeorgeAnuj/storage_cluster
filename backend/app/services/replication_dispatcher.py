@@ -17,7 +17,7 @@ async def dispatch_replication_to_devices(db, chunk_id: int, server_base_url: st
             "chunk_id": chunk_id,
             "download_url": f"{server_base_url.rstrip('/')}/chunks/{chunk_id}/download",
         }
-
+        print("SENDING PUSH_CHUNK to device", r.device_id)
         ok = await manager.send_json_to_device(r.device_id, payload)
 
         if not ok:

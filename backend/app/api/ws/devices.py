@@ -77,7 +77,7 @@ async def device_ws(ws: WebSocket):
 
         # 4. Send ACK so the phone knows it's part of the cluster
         await ws.send_json({
-            "status": "ready",
+            "type": "ready",
             "device_id": current_device_id,
             # "config": {"heartbeat_interval": 30} HEARTBEAT DONE USING REST
         })
@@ -85,7 +85,7 @@ async def device_ws(ws: WebSocket):
         # 5. Main Control Loop
         while True:
             msg = await ws.receive_json()
-            
+            print("REACHED HEREEE")
             #heartbeat already done using rest
 
             # if msg["type"] == "heartbeat":

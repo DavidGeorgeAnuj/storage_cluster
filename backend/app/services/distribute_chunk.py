@@ -3,7 +3,7 @@ from app.models.chunk_replication import ChunkReplication
 from app.services.plan_replication import plan_replication
 
 # MUST include http:// or the phone's request will fail
-SERVER_IP = "http://10.124.156.168:8000"  
+SERVER_IP = "http://10.0.2.2:8000"  
 
 async def distribute_chunk(db, chunk, manager):
     # 1. Plan the replication (This adds rows to ChunkReplication)
@@ -29,11 +29,13 @@ async def distribute_chunk(db, chunk, manager):
                 command_type="DOWNLOAD_CHUNK",
                 data={
                     "chunk_id": chunk.chunk_id,
-                    "download_url": f"{SERVER_IP}/chunks/download/{chunk.chunk_id}",
+                    "download_url": f"{SERVER_IP}/chunks/{chunk.chunk_id}/download",
                     "expected_hash": chunk.chunk_hash
                 }
             )
         )
+        print(f"SENDING DOWNLOAD CHUNK OVER WS to {assignment.device_id}")
+        
     
     # Send all commands at once instead of one-by-one
     await asyncio.gather(*tasks)

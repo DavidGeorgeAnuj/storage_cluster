@@ -3,13 +3,21 @@ package com.phonecluster.app.utils.websocket
 import android.content.Context
 import android.util.Log
 import com.phonecluster.app.storage.PreferencesManager
+import com.phonecluster.app.storage.ChunkStorage
 import com.phonecluster.app.utils.DeviceInfoProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
+import java.security.MessageDigest
 
 object WebSocketManager {
 
-    private var client: DeviceWebSocketClient? = null
+    private var wsClient: DeviceWebSocketClient? = null
     private var isConnected = false
+    private lateinit var appContext: Context
 
     fun connect(context: Context, serverIp: String) {
 
@@ -17,8 +25,10 @@ object WebSocketManager {
             Log.d("WS_DEBUG", "Already connected, skipping")
             return
         }
+//        if (isConnected) return
 
         val deviceId = PreferencesManager.getDeviceId(context) ?: return
+        appContext = context.applicationContext
 
         val registerPayload = JSONObject().apply {
             put("type", "register")
@@ -31,7 +41,7 @@ object WebSocketManager {
 
         val wsUrl = "ws://$serverIp:8000/ws/device"
 
-        client = DeviceWebSocketClient(
+        wsClient = DeviceWebSocketClient(
             serverWsUrl = wsUrl,
 
             onOpenCallback = {
@@ -49,12 +59,13 @@ object WebSocketManager {
             }
         )
 
-        client?.connect(registerPayload)
+        wsClient?.connect(registerPayload)
+        isConnected = true
     }
 
     fun disconnect() {
-        client?.disconnect()
-        client = null
+        wsClient?.disconnect()
+        wsClient = null
         isConnected = false
     }
 
@@ -62,25 +73,89 @@ object WebSocketManager {
         Log.d("WS_DEBUG", "Handling message: $msg")
 
         when (msg.optString("type")) {
+
             "ready" -> {
-                Log.d("WS_DEBUG", "Server acknowledged connection")
+                Log.d("WS", "Connected to server")
             }
 
-            "STORE_CHUNK" -> {
-                Log.d("WS_DEBUG", "Received STORE_CHUNK command")
+            "DOWNLOAD_CHUNK" -> {
+                handleDownloadChunk(msg)
             }
 
             else -> {
-                Log.d("WS_DEBUG", "Unknown message type")
+                Log.d("WS", "Unknown message: $msg")
             }
         }
     }
 
-    fun sendAck(taskId: String) {
-        val ack = JSONObject().apply {
-            put("type", "cmd_ack")
-            put("task_id", taskId)
+    private fun handleDownloadChunk(msg: JSONObject) {
+        val chunkId = msg.getLong("chunk_id")
+        val downloadUrl = msg.getString("download_url")
+        val expectedHash = msg.getString("expected_hash")
+
+        Log.d("WS", "DOWNLOAD_CHUNK received for $chunkId")
+        Log.d("WS", "Downloading from $downloadUrl")
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val httpClient = OkHttpClient()
+
+                val request = Request.Builder()
+                    .url(downloadUrl)
+                    .get()
+                    .build()
+
+                val response = httpClient.newCall(request).execute()
+
+                if (!response.isSuccessful) {
+                    throw RuntimeException("Download failed: ${response.code}")
+                }
+
+                val bodyBytes = response.body?.bytes()
+                    ?: throw RuntimeException("Empty response body")
+
+                // 1️⃣ Validate SHA256
+                val actualHash = sha256Hex(bodyBytes)
+                if (actualHash != expectedHash) {
+                    throw RuntimeException("Hash mismatch for chunk $chunkId")
+                }
+
+                Log.d("WS", "Hash verified for chunk $chunkId")
+
+                // 2️⃣ Store locally
+                ChunkStorage.writeChunk(
+                    context = appContext,
+                    chunkId = chunkId,
+                    data = bodyBytes
+                )
+
+                Log.d("WS", "Chunk $chunkId stored locally")
+
+                // 3️⃣ Send ACK to server
+                wsClient?.send(
+                    JSONObject()
+                        .put("type", "CHUNK_STORED_SUCCESS")
+                        .put("chunk_id", chunkId)
+                )
+
+                Log.d("WS", "CHUNK_STORED_SUCCESS sent for $chunkId")
+
+            } catch (e: Exception) {
+                Log.e("WS", "DOWNLOAD_CHUNK failed: ${e.message}")
+
+                wsClient?.send(
+                    JSONObject()
+                        .put("type", "CHUNK_STORE_FAILED")
+                        .put("chunk_id", chunkId)
+                        .put("error", e.message ?: "unknown")
+                )
+            }
         }
-        client?.send(ack)
+    }
+
+    private fun sha256Hex(data: ByteArray): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hash = digest.digest(data)
+        return hash.joinToString("") { "%02x".format(it) }
     }
 }
