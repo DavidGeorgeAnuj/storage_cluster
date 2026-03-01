@@ -18,6 +18,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 🔹 NDK configuration (for Ascon JNI)
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            // Optional for emulator support:
+            // abiFilters += listOf("x86_64")
+        }
     }
 
     buildTypes {
@@ -29,15 +36,26 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
+    }
+
+    // 🔹 Connect CMake (NDK build system)
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 }
 
