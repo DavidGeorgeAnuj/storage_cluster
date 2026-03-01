@@ -6,7 +6,6 @@ class ConnectionManager:
         self.active: Dict[int, WebSocket] = {}
 
     async def connect(self, device_id: int, websocket: WebSocket):
-        await websocket.accept()
         self.active[device_id] = websocket
 
     def disconnect(self, device_id: int):
