@@ -72,12 +72,7 @@ async def device_ws(ws: WebSocket):
 
             msg_type = msg.get("type")
 
-            if msg_type == "cmd_ack":
-                logger.info(
-                    f"WS: Device {current_device_id} acknowledged task {msg.get('task_id')}"
-                )
-
-            elif msg_type == "CHUNK_STORED_SUCCESS":
+            if msg_type == "CHUNK_STORED_SUCCESS":
                 chunk_id = msg.get("chunk_id")
                 logger.info(
                     f"WS: CHUNK_STORED_SUCCESS received. Device={current_device_id}, Chunk={chunk_id}"

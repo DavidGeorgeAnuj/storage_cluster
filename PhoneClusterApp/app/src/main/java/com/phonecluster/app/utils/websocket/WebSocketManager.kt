@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.security.MessageDigest
 
@@ -88,9 +89,8 @@ object WebSocketManager {
                 }
 
                 when (command) {
-                    "DOWNLOAD_CHUNK" -> {
-                        handleDownloadChunk(data)
-                    }
+                    "DOWNLOAD_CHUNK" -> handleDownloadChunk(data)
+                    "PUSH_CHUNK" -> handlePushChunk(data)
 
                     else -> {
                         Log.d("WS_DEBUG", "Unknown command: $command")
@@ -164,6 +164,31 @@ object WebSocketManager {
                         .put("chunk_id", chunkId)
                         .put("error", e.message ?: "unknown")
                 )
+            }
+        }
+    }
+
+    private fun handlePushChunk(data: JSONObject) {
+        val chunkId = data.getLong("chunk_id")
+        val targetUrl = data.getString("target_url")
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val chunkBytes = ChunkStorage.readChunk(appContext, chunkId)
+
+                val requestBody = chunkBytes.toRequestBody()
+
+                val request = Request.Builder()
+                    .url(targetUrl)
+                    .post(requestBody)
+                    .build()
+
+                OkHttpClient().newCall(request).execute()
+
+                Log.d("WS", "PUSH_CHUNK uploaded $chunkId")
+
+            } catch (e: Exception) {
+                Log.e("WS", "PUSH_CHUNK failed: ${e.message}")
             }
         }
     }
