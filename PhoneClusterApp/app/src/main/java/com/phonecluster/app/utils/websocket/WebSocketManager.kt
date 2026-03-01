@@ -75,19 +75,34 @@ object WebSocketManager {
         when (msg.optString("type")) {
 
             "ready" -> {
-                Log.d("WS", "Connected to server")
+                Log.d("WS_DEBUG", "Connected to server")
             }
 
-            "DOWNLOAD_CHUNK" -> {
-                handleDownloadChunk(msg)
+            "command" -> {
+                val command = msg.optString("command")
+                val data = msg.optJSONObject("data")
+
+                if (data == null) {
+                    Log.e("WS_DEBUG", "Command without data: $msg")
+                    return
+                }
+
+                when (command) {
+                    "DOWNLOAD_CHUNK" -> {
+                        handleDownloadChunk(data)
+                    }
+
+                    else -> {
+                        Log.d("WS_DEBUG", "Unknown command: $command")
+                    }
+                }
             }
 
             else -> {
-                Log.d("WS", "Unknown message: $msg")
+                Log.d("WS_DEBUG", "Unknown message type: $msg")
             }
         }
     }
-
     private fun handleDownloadChunk(msg: JSONObject) {
         val chunkId = msg.getLong("chunk_id")
         val downloadUrl = msg.getString("download_url")
