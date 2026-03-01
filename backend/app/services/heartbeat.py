@@ -1,11 +1,13 @@
 from sqlalchemy.orm import Session
 from app.models.device import Device
 from datetime import datetime
+from typing import Optional
 
 def handle_heartbeat(
         db: Session, 
         device_id: int,
-        available_storage: int | None = None,
+        available_storage: Optional[int]
+,
 ):
     device = (
         db.query(Device)
@@ -18,6 +20,7 @@ def handle_heartbeat(
 
     device.last_heartbeat = datetime.utcnow()
     device.status = "ONLINE"
+    device.mode = "Cluster"
     
     if available_storage is not None:
         if 0 <= available_storage <= device.storage_capacity:

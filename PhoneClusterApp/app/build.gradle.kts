@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-kapt")
+    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
@@ -18,13 +20,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // 🔹 NDK configuration (for Ascon JNI)
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
-            // Optional for emulator support:
-            // abiFilters += listOf("x86_64")
-        }
     }
 
     buildTypes {
@@ -36,28 +31,31 @@ android {
             )
         }
     }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
     kotlinOptions {
         jvmTarget = "11"
     }
-
     buildFeatures {
         compose = true
     }
-
-    // 🔹 Connect CMake (NDK build system)
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/LICENSE",
+                "META-INF/NOTICE"
+            )
         }
     }
+
 }
+
+kapt {
+    correctErrorTypes = true
+}
+
 
 dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -77,6 +75,15 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("androidx.compose.material:material-icons-extended")
+
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.17.0")
+    implementation("androidx.room:room-runtime:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation("ai.djl.huggingface:tokenizers:0.24.0")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
 
     // Retrofit - REST API client
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

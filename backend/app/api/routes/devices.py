@@ -1,26 +1,28 @@
-from app.core.database import SessionLocal
 from sqlalchemy.orm import Session 
-from app.services.registration import register_device
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+
+from app.core.database import get_db, SessionLocal
+from app.core.connection_manager import manager
+
 from app.models.chunk import Chunk
 from app.models.device import Device
-from fastapi import APIRouter, Depends, HTTPException
 from app.models.file import File as FileModel   # Avoid name conflict with fastapi 'File'
 from app.models.chunk import Chunk             
+
+from app.services.registration import register_device
+from app.services.distribute_chunk import distribute_chunk
+from app.services.heartbeat import handle_heartbeat
+
+import hashlib
 from pydantic import BaseModel
 from typing import List, Optional 
-from app.core.database import get_db
-from fastapi import UploadFile, File
-import os
-from app.services.distribute_chunk import distribute_chunk
-import hashlib
-from app.services.heartbeat import handle_heartbeat
 from datetime import datetime, timezone
 from pathlib import Path
-from app.core.connection_manager import manager
 from fastapi.responses import FileResponse
+import os
 
-
-Path("temp_chunks").mkdir(exist_ok=True)
+from app.core.constants import TEMP_CHUNK_DIR
 
 router = APIRouter()
 
@@ -112,7 +114,7 @@ async def upload_chunk_data(
         raise HTTPException(status_code=400, detail="Integrity check failed: Hash mismatch")
 
     # 4. Save locally temporarily
-    path = f"./temp_chunks/chunk_{db_chunk.chunk_id}.bin"
+    path = TEMP_CHUNK_DIR / f"chunk_{db_chunk.chunk_id}.bin"
     with open(path, "wb") as f:
         f.write(chunk_data)
 
@@ -121,7 +123,6 @@ async def upload_chunk_data(
     # we tell the cluster to come get it.
     print("Using manager:", manager)
     await distribute_chunk(db, db_chunk, manager)
-
 
     return {"status": "success", "chunk_id": db_chunk.chunk_id}
 
@@ -143,15 +144,3 @@ def heartbeat_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-@router.get("/chunks/{chunk_id}/download")
-def download_chunk(chunk_id: int):
-    path = f"./temp_chunks/chunk_{chunk_id}.bin"
-
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="Chunk file not found on server")
-
-    return FileResponse(
-        path,
-        media_type="application/octet-stream",
-        filename=f"chunk_{chunk_id}.bin"
-    )
