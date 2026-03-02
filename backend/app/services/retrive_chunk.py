@@ -2,7 +2,9 @@ from app.models.chunk_replication import ChunkReplication
 from app.models.device import Device
 import hashlib
 from app.core.constants import SERVER_BASE_URL
-
+from pathlib import Path
+from app.core.constants import TEMP_CHUNK_DIR
+from app.services.chunk_waiter import init_chunk_wait, wait_for_chunk
 
 
 async def retrieve_chunk(db, chunk, manager):
@@ -49,7 +51,14 @@ async def retrieve_chunk(db, chunk, manager):
             if hashlib.sha256(data).hexdigest() != chunk.chunk_hash:
                 raise ValueError("Hash mismatch")
 
-            return data
+            # 🔥 THIS WAS MISSING
+            temp_path = TEMP_CHUNK_DIR / f"chunk_{chunk.chunk_id}.bin"
+            temp_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(temp_path, "wb") as f:
+                f.write(data)
+
+            return temp_path  # return file path, not raw bytes
 
         except Exception:
             continue

@@ -6,7 +6,7 @@ from app.models.device import Device
 from app.models.file import File as FileModel   # Avoid name conflict with fastapi 'File'
 from app.models.chunk import Chunk             
 
-from app.core.chunk_waiter import set_chunk_arrived
+from app.services.chunk_waiter import set_chunk_arrived
 from app.core.database import get_db
 
 from fastapi import APIRouter, Depends, HTTPException
