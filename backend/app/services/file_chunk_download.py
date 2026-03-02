@@ -45,13 +45,7 @@ async def fetch_all_chunks_for_file(db: Session, file_id: int, manager):
             continue
 
         # Orchestrate retrieval from phones
-        data = await retrieve_chunk(db, chunk, manager)
+        await retrieve_chunk(db, chunk, manager)
 
-        # Optional: verify chunk hash here again 
-        if hashlib.sha256(data).hexdigest() != chunk.chunk_hash:
-            raise RuntimeError(f"Integrity failure for chunk {chunk.chunk_id}")
-
-        with open(path, "wb") as f:
-            f.write(data)
-
+        
     return chunks

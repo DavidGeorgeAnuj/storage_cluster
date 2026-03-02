@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
-from app.core.chunk_waiter import set_chunk_arrived
+from app.services.chunk_waiter import set_chunk_arrived
 
 from app.core.database import get_db
 from app.models.chunk import Chunk
