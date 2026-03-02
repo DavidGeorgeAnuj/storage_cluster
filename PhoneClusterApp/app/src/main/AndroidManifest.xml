@@ -17,6 +17,11 @@
     <!-- ADD THIS - For accessing documents, PDFs, and other files on Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
 
+    <!-- for running the app on storage node as a foreground service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application
         android:usesCleartextTraffic="true"
         android:allowBackup="true"
@@ -39,6 +44,10 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".storage.StorageNodeService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>

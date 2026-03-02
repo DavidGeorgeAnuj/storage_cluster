@@ -34,6 +34,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Request notification permission for Android 13+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                1
+            )
+        }
+
         // =========================
         // 1) QUICK BYTE ARRAY TEST
         // =========================

@@ -10,6 +10,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.phonecluster.app.storage.PreferencesManager
+import android.content.Intent
+import androidx.core.content.ContextCompat
+import com.phonecluster.app.storage.StorageNodeService
 
 @Composable
 fun ModeSelectionScreen(
@@ -88,7 +91,15 @@ fun ModeSelectionScreen(
 
             // Storage Mode Button
             OutlinedButton(
-                onClick = onStorageModeClick,
+                onClick = {
+                    if (deviceId != -1) {
+                        val intent = Intent(context, StorageNodeService::class.java)
+                        intent.putExtra("deviceId", deviceId)
+                        ContextCompat.startForegroundService(context, intent)
+                    }
+
+                    onStorageModeClick()
+                },
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
                     .height(56.dp)

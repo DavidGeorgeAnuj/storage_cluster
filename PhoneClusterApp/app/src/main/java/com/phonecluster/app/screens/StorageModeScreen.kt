@@ -10,38 +10,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.phonecluster.app.storage.PreferencesManager
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.DisposableEffect
-import com.phonecluster.app.utils.heartbeat.HeartbeatManager
-import com.phonecluster.app.utils.websocket.WebSocketManager
+import com.phonecluster.app.utils.DeviceInfoProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StorageModeScreen(onBackClick: () -> Unit = {}) {
     val context = LocalContext.current
     val deviceId = PreferencesManager.getDeviceId(context) ?: -1
-
-    LaunchedEffect(Unit) {
-        if (deviceId != -1) {
-            HeartbeatManager.start(
-//              serverBaseUrl = "http://10.124.156.168:8000",
-                serverBaseUrl = "http://10.0.2.2:8000",
-                deviceId = deviceId
-            )
-            WebSocketManager.connect(
-                context = context,
-                serverIp = "10.0.2.2"
-            )
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            HeartbeatManager.stop()
-            WebSocketManager.disconnect()
-        }
-    }
-
+    android.util.Log.d("FINGERPRINT",
+        DeviceInfoProvider.getDeviceFingerprint(context)
+    )
     Scaffold(
         topBar = {
             TopAppBar(

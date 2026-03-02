@@ -14,7 +14,9 @@ android {
     compileSdk {
         version = release(36)
     }
-
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
     defaultConfig {
         applicationId = "com.phonecluster.app"
         minSdk = 26

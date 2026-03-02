@@ -6,63 +6,46 @@ from app.models.device import Device
 from app.core.database import SessionLocal
 from app.core.connection_manager import manager 
 from app.models.chunk_replication import ChunkReplication
-
+import asyncio 
 
 logger = logging.getLogger("uvicorn")
-
 async def device_ws(ws: WebSocket):
-    # 1. Accept the socket first so we can talk
+    logger.info("WS: Incoming connection")
     await ws.accept()
+    logger.info("WS: Accepted connection")
+
     db: Session = SessionLocal()
     current_device_id = None
 
     try:
-        # 2. Handshake / Registration Phase 
-        # We expect the first message to identify the node
+        logger.info("WS: Waiting for register payload...")
         payload = await ws.receive_json()
-        
-        if payload.get("type") != "register": # its not register, more like attaching a ws as well with REST
+        logger.info(f"WS: Received payload: {payload}")
+
+        if payload.get("type") != "register":
+            logger.warning("WS: First message was not 'register'. Closing.")
             await ws.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-        fingerprint = payload["fingerprint"]
-        
-        # Look up or Create Device
-        device = db.query(Device).filter(Device.device_fingerprint == fingerprint).first()
+        fingerprint = payload.get("fingerprint")
+        logger.info(f"WS: Fingerprint received: {fingerprint}")
 
-        #NOT NEEDED AS THE REGISTRATION PART IS ALREADY DONE USING REST
+        device = db.query(Device).filter(
+            Device.device_fingerprint == fingerprint
+        ).first()
 
-        # if not device:
-        #     device = Device(
-        #         user_id=payload["user_id"],
-        #         device_name=payload["device_name"],
-        #         device_fingerprint=fingerprint,
-        #         storage_capacity=payload["storage_capacity"],
-        #         available_storage=payload["available_storage"],
-        #         status="ONLINE",
-        #         last_heartbeat=datetime.utcnow()
-        #     )
-        #     db.add(device)
-        # else:
-        #     device.status = "ONLINE"
-        #     device.available_storage = payload.get("available_storage", device.available_storage)
-        #     device.last_heartbeat = datetime.utcnow()
-        
-        # db.commit()
-        # db.refresh(device)
-
-        # 2.5 Validate device existence and liveness
-
-        # Case 1: Device does not exist (not registered via REST)
         if not device:
+            logger.warning("WS: Device not found in DB. Closing.")
             await ws.close(
                 code=status.WS_1008_POLICY_VIOLATION,
                 reason="Device not registered"
             )
             return
 
-        # Case 2: Device exists but is OFFLINE (heartbeat timed out)
+        logger.info(f"WS: Device found. ID={device.device_id}, Status={device.status}")
+
         if device.status != "ONLINE":
+            logger.warning(f"WS: Device {device.device_id} is not ONLINE. Status={device.status}. Closing.")
             await ws.close(
                 code=status.WS_1008_POLICY_VIOLATION,
                 reason="Device is offline"
@@ -71,62 +54,65 @@ async def device_ws(ws: WebSocket):
 
         current_device_id = device.device_id
 
-        # 3. Register with the Global Manager
-        # This allows the Coordinator to find this socket later for commands
+        logger.info(f"WS: Registering device {current_device_id} with connection manager")
         await manager.connect(current_device_id, ws)
 
-        # 4. Send ACK so the phone knows it's part of the cluster
+        logger.info(f"WS: Sending ready to device {current_device_id}")
         await ws.send_json({
-            "status": "ready",
+            "type": "ready",
             "device_id": current_device_id,
-            # "config": {"heartbeat_interval": 30} HEARTBEAT DONE USING REST
         })
 
-        # 5. Main Control Loop
+        logger.info("WS: Entering main loop")
+
         while True:
+            logger.info(f"WS: Waiting for message from {current_device_id}")
             msg = await ws.receive_json()
-            
-            #heartbeat already done using rest
+            logger.info(f"WS: Message received from {current_device_id}: {msg}")
 
-            # if msg["type"] == "heartbeat":
-            #     # Bulk update to avoid constant DB writes if performance is an issue
-            #     device.last_heartbeat = datetime.utcnow()
-            #     device.available_storage = msg.get("available_storage", device.available_storage)
-            #     db.commit()
+            msg_type = msg.get("type")
 
-
-            if msg["type"] == "cmd_ack":
-                # Device confirms it received a  command
-                print(f"Device {device.device_id} is processing {msg['task_id']}")
-
-            elif msg["type"] == "CHUNK_STORED_SUCCESS":
+            if msg_type == "CHUNK_STORED_SUCCESS":
                 chunk_id = msg.get("chunk_id")
-                
-                # 1. Find the replication record for this specific device and chunk
+                logger.info(
+                    f"WS: CHUNK_STORED_SUCCESS received. Device={current_device_id}, Chunk={chunk_id}"
+                )
+                db.rollback()
                 replication_entry = db.query(ChunkReplication).filter(
                     ChunkReplication.chunk_id == chunk_id,
-                    ChunkReplication.device_id == current_device_id # device_id from the WS session
+                    ChunkReplication.device_id == current_device_id
                 ).first()
 
                 if replication_entry:
-                    # 2. Upgrade status to ACTIVE
+                    logger.info("WS: Replication entry found. Marking ACTIVE.")
                     replication_entry.replica_status = "ACTIVE"
                     db.commit()
-                    print(f"Chunk {chunk_id} is now ACTIVE on Device {current_device_id}")
-            
+                    logger.info(
+                        f"WS: Chunk {chunk_id} is now ACTIVE on Device {current_device_id}"
+                    )
+                else:
+                    logger.warning(
+                        f"WS: No replication entry found for Device={current_device_id}, Chunk={chunk_id}"
+                    )
 
+            else:
+                logger.warning(
+                    f"WS: Unknown message type from {current_device_id}: {msg_type}"
+                )
+    except asyncio.TimeoutError:
+        await ws.send_json({"type": "ping"})
     except WebSocketDisconnect:
-        logger.info(f"Device {current_device_id} disconnected.")
+        logger.info(f"WS: Device {current_device_id} disconnected.")
+
     except Exception as e:
-        logger.error(f"Error in WS loop: {e}")
+        logger.exception(f"WS: Unexpected error for device {current_device_id}: {e}")
+
     finally:
-        # 6. Cleanup - Crucial for distributed state
+        logger.info(f"WS: Cleaning up connection for {current_device_id}")
+
         if current_device_id:
             manager.disconnect(current_device_id)
+            logger.info(f"WS: Disconnected {current_device_id} from manager")
 
-            # Re-fetch device in a fresh session state if needed
-            # device = db.query(Device).get(current_device_id)
-            # if device:
-            #     device.status = "OFFLINE"
-            #     db.commit()
         db.close()
+        logger.info("WS: DB session closed")
