@@ -27,14 +27,22 @@ fun FileBrowserScreen(
 
         LazyColumn {
             items(files) { file ->
-                FileItem(file)
+                FileItem(
+                    file = file,
+                    onDownload = { id ->
+                        viewModel.downloadFile(id)
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun FileItem(file: FileEntity) {
+fun FileItem(
+    file: FileEntity,
+    onDownload: (Long) -> Unit
+) {
 
     Column(
         modifier = Modifier
@@ -46,7 +54,7 @@ fun FileItem(file: FileEntity) {
         Text(text = "Size: ${file.fileSize} bytes")
 
         Row {
-            Button(onClick = { /* TODO: Download */ }) {
+            Button(onClick = { onDownload(file.serverFileId.toLong()) }) {
                 Text("Download")
             }
 

@@ -1,7 +1,6 @@
 from app.models.chunk_replication import ChunkReplication
 from app.models.device import Device
 import hashlib
-from app.services.retrive_chunk import init_chunk_wait, wait_for_chunk
 from app.core.constants import SERVER_BASE_URL
 
 

@@ -4,6 +4,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from app.core.scheduler import offline_monitor_loop
 from app.api.routes.devices import router as device_router
+from app.api.routes.files import router as file_router
 from app.api.routes import chunks
 
 @asynccontextmanager
@@ -25,6 +26,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(device_router)
 app.include_router(chunks.router)
+app.include_router(file_router)
 
 @app.websocket("/ws/device")
 async def ws_service(websocket : WebSocket):

@@ -7,4 +7,4 @@ __pycache__/
 venv/
 .env/
 
-/temp_chunks
+backend/temp_chunks

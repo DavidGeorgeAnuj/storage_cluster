@@ -23,6 +23,7 @@ router = APIRouter()
 
 @router.get("/files/{file_id}/download")
 async def download_file(file_id: int, db: Session = Depends(get_db)):
+    print("DOWNLOAD FILE ROUTE HIT:", file_id)
     try:
         # 1. Ensure all chunks are fetched locally
         chunks = await fetch_all_chunks_for_file(db, file_id, manager)
