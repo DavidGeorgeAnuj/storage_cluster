@@ -35,14 +35,15 @@ class StorageNodeService : Service() {
         if (deviceId != -1) {
             HeartbeatManager.start(
                 context = this,
-                serverBaseUrl = "http://10.0.2.2:8000",
-                serverIp = "10.0.2.2",
-                deviceId = deviceId
+                serverBaseUrl = "http://10.70.222.130:8000",
+                serverIp = "10.70.222.130",
+                deviceId = deviceId,
+                mode = "Cluster"
             )
 
             WebSocketManager.connect(
                 context = this,
-                serverIp = "10.0.2.2"
+                serverIp = "10.70.222.130"
             )
         }
 
