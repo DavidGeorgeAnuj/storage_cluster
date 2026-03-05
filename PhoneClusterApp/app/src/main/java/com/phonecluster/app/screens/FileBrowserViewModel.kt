@@ -7,7 +7,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import com.phonecluster.app.storage.AppDatabase
 import com.phonecluster.app.storage.FileEntity
 
@@ -15,18 +16,14 @@ class FileBrowserViewModel(application: Application) : AndroidViewModel(applicat
 
     private val dao = AppDatabase.getDatabase(application).fileDao()
     private val repository = FileRepository()
-    private val _files = MutableStateFlow<List<FileEntity>>(emptyList())
-    val files: StateFlow<List<FileEntity>> = _files
 
-    init {
-        loadFiles()
-    }
-
-    private fun loadFiles() {
-        viewModelScope.launch {
-            _files.value = dao.getAllFiles()
-        }
-    }
+    val files: StateFlow<List<FileEntity>> =
+        dao.getAllFiles()
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyList()
+            )
 
     fun downloadFile(fileId: Long) {
         viewModelScope.launch {
@@ -37,6 +34,4 @@ class FileBrowserViewModel(application: Application) : AndroidViewModel(applicat
             }
         }
     }
-
 }
-

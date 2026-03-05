@@ -115,7 +115,7 @@ fun SearchScreen(
                             )
 
                             val files = withContext(Dispatchers.IO) {
-                                dao.getAllFiles()
+                                dao.getAllFilesOnce()
                             }
 
                             val ranked = files.map {

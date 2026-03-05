@@ -14,6 +14,7 @@ fun FileBrowserScreen(
     onBackClick: () -> Unit,
     viewModel: FileBrowserViewModel = viewModel()
 ) {
+
     val files by viewModel.files.collectAsState()
 
     Column {

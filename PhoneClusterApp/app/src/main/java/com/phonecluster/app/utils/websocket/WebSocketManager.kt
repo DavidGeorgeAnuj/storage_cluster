@@ -22,7 +22,6 @@ object WebSocketManager {
     private lateinit var appContext: Context
 
     fun connect(context: Context, serverIp: String) {
-
         if (isConnected) {
             Log.d("WS_DEBUG", "Already connected, skipping")
             return

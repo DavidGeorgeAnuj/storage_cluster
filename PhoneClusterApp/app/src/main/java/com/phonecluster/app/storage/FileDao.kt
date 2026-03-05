@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FileDao {
@@ -12,8 +13,11 @@ interface FileDao {
     suspend fun insert(file: FileEntity)
 
     @Query("SELECT * FROM files")
-    suspend fun getAllFiles(): List<FileEntity>
+    fun getAllFiles(): Flow<List<FileEntity>>
 
     @Query("DELETE FROM files WHERE serverFileId = :serverFileId")
     suspend fun deleteByServerId(serverFileId: Int)
+
+    @Query("SELECT * FROM files")
+    suspend fun getAllFilesOnce(): List<FileEntity>
 }
