@@ -29,18 +29,17 @@ class StorageNodeService : Service() {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
             .build()
-
         startForeground(NOTIFICATION_ID, notification)
 
         if (deviceId != -1) {
             HeartbeatManager.start(
-                serverBaseUrl = "http://10.0.2.2:8000",
+                serverBaseUrl = "http://10.70.222.130:8000",
                 deviceId = deviceId
             )
 
             WebSocketManager.connect(
                 context = this,
-                serverIp = "10.0.2.2"
+                serverIp = "10.70.222.130"
             )
         }
 

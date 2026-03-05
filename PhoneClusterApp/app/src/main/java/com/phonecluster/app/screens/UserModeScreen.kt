@@ -269,7 +269,7 @@ fun UserModeScreen(
                                     try {
                                         // IMPORTANT: Change this to your PC's IP address
 //                                        val baseUrl = "http://10.124.156.168:8000"
-                                        val baseUrl =  "http://10.0.2.2:8000"
+                                        val baseUrl =  "http://10.70.222.130:8000"
                                         val userId = 1 // TODO: Get from actual user session
 
                                         val fileId = withContext(Dispatchers.IO) {
