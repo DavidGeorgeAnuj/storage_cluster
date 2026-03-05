@@ -34,7 +34,9 @@ class StorageNodeService : Service() {
 
         if (deviceId != -1) {
             HeartbeatManager.start(
+                context = this,
                 serverBaseUrl = "http://10.0.2.2:8000",
+                serverIp = "10.0.2.2",
                 deviceId = deviceId
             )
 

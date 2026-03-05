@@ -50,8 +50,7 @@ async def retrieve_chunk(db, chunk, manager):
             # integrity check
             if hashlib.sha256(data).hexdigest() != chunk.chunk_hash:
                 raise ValueError("Hash mismatch")
-
-            # 🔥 THIS WAS MISSING
+    
             temp_path = TEMP_CHUNK_DIR / f"chunk_{chunk.chunk_id}.bin"
             temp_path.parent.mkdir(parents=True, exist_ok=True)
 

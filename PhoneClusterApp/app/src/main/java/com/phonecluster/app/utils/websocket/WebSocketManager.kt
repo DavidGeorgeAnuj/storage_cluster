@@ -7,6 +7,7 @@ import com.phonecluster.app.storage.ChunkStorage
 import com.phonecluster.app.utils.DeviceInfoProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -57,6 +58,12 @@ object WebSocketManager {
             onDisconnected = {
                 Log.d("WS_DEBUG", "Disconnected from server")
                 isConnected = false
+
+                // Attempt reconnect after delay
+                CoroutineScope(Dispatchers.IO).launch {
+                    delay(3000)
+                    connect(appContext, serverIp)
+                }
             }
         )
 
@@ -68,6 +75,9 @@ object WebSocketManager {
         wsClient?.disconnect()
         wsClient = null
         isConnected = false
+    }
+    fun isConnected(): Boolean {
+        return isConnected
     }
 
     private fun handleServerMessage(msg: JSONObject) {
