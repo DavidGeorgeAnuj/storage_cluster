@@ -19,10 +19,13 @@ object HeartbeatHttpClient {
     fun sendHeartbeat(
         serverBaseUrl: String,
         deviceId: Int,
-        availableStorage: Long?
-    ) {
+        availableStorage: Long?,
+        mode: String
+    ){
         val payload = JSONObject().apply {
             put("device_id", deviceId)
+            put("mode", mode)
+
             availableStorage?.let {
                 put("available_storage", it)
             }

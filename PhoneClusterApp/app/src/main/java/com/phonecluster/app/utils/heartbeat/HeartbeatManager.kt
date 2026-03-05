@@ -17,7 +17,8 @@ object HeartbeatManager {
         context: Context,
         serverBaseUrl: String,
         serverIp: String,
-        deviceId: Int
+        deviceId: Int,
+        mode:String
     ) {
         if (job != null) return
 
@@ -33,7 +34,8 @@ object HeartbeatManager {
                     HeartbeatHttpClient.sendHeartbeat(
                         serverBaseUrl = serverBaseUrl,
                         deviceId = deviceId,
-                        availableStorage = availableStorage
+                        availableStorage = availableStorage,
+                        mode = mode
                     )
                 } catch (e: Exception) {
                     Log.d("HEARTBEAT", "Heartbeat failed: ${e.message}")

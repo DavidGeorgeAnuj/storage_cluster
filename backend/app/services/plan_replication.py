@@ -30,6 +30,7 @@ def plan_replication(
             Device.status == "ONLINE",
             Device.available_storage >= chunk_size,
             ~Device.device_id.in_(existing_device_ids),
+            Device.mode == "Cluster"
         )
         .order_by(Device.available_storage.desc())
         .limit(needed)
