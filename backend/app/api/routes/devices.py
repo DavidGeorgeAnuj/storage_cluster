@@ -54,6 +54,7 @@ class FileUploadInit(BaseModel):
 class HeartbeatRequest(BaseModel):
     device_id: int
     available_storage: Optional[int] = None
+    mode:str
 
 
 # File upload initialization endpoint:
@@ -137,7 +138,8 @@ def heartbeat_endpoint(
         handle_heartbeat(
             db=db,
             device_id=payload.device_id,
-            available_storage=payload.available_storage
+            available_storage=payload.available_storage,
+            mode = payload.mode
         )
         return {"status": "ok"}
 
