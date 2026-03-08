@@ -2,6 +2,7 @@ import asyncio
 from app.core.database import SessionLocal
 from app.services.offline_detection import mark_offline_devices
 import app.models  # register models
+from app.services.repair_manager import repair_under_replicated_chunks
 
 async def offline_monitor_loop():
     while True:
@@ -15,3 +16,17 @@ async def offline_monitor_loop():
             db.rollback()
         finally:
             db.close()
+
+            import asyncio
+
+
+async def repair_loop():
+    while True:
+        db = SessionLocal()
+
+        try:
+            repair_under_replicated_chunks(db)
+        finally:
+            db.close()
+
+        await asyncio.sleep(10)

@@ -2,25 +2,37 @@ from fastapi import FastAPI, WebSocket
 from app.api.ws.devices import device_ws
 import asyncio
 from contextlib import asynccontextmanager
+
 from app.core.scheduler import offline_monitor_loop
+from app.core.repair_loop import repair_loop   # <-- add this
+
 from app.api.routes.devices import router as device_router
 from app.api.routes.files import router as file_router
 from app.api.routes import chunks
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # This runs when the server starts
-    task = asyncio.create_task(offline_monitor_loop())
-    print("Startup: Offline monitor loop started.")
-    
-    yield  # The application runs while stuck here
-    
-    # This runs when the server stops
-    task.cancel()
+
+    offline_task = asyncio.create_task(offline_monitor_loop())
+    repair_task = asyncio.create_task(repair_loop())
+
+    print("Startup: Background loops started.")
+
+    yield
+
+    offline_task.cancel()
+    repair_task.cancel()
+
     try:
-        await task
+        await offline_task
     except asyncio.CancelledError:
-        print("Shutdown: Offline monitor loop stopped.")
+        print("Offline monitor stopped.")
+
+    try:
+        await repair_task
+    except asyncio.CancelledError:
+        print("Repair loop stopped.")
 
 
 app = FastAPI(lifespan=lifespan)
