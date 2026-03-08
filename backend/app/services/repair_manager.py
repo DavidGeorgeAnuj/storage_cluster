@@ -4,11 +4,13 @@ from sqlalchemy import func
 from app.models.chunk import Chunk
 from app.models.chunk_replication import ChunkReplication
 from app.services.plan_replication import plan_replication
+from app.services.distribute_chunk import distribute_chunk
+from app.core.connection_manager import manager
 
 DESIRED_REPLICAS = 2
 
 
-def repair_under_replicated_chunks(db: Session):
+async def repair_under_replicated_chunks(db: Session):
     chunks = db.query(Chunk).all()
 
     for chunk in chunks:
@@ -34,3 +36,5 @@ def repair_under_replicated_chunks(db: Session):
                 chunk_size=chunk.chunk_size,
                 replicas=DESIRED_REPLICAS
             )
+
+            await distribute_chunk(db, chunk, manager)

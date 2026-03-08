@@ -45,12 +45,10 @@ async def device_ws(ws: WebSocket):
         logger.info(f"WS: Device found. ID={device.device_id}, Status={device.status}")
 
         if device.status != "ONLINE":
-            logger.warning(f"WS: Device {device.device_id} is not ONLINE. Status={device.status}. Closing.")
-            await ws.close(
-                code=status.WS_1008_POLICY_VIOLATION,
-                reason="Device is offline"
-            )
-            return
+            logger.info(f"WS: Device {device.device_id} transitioning to ONLINE")
+            device.status = "ONLINE"
+            device.last_seen = datetime.utcnow()
+            db.commit()
 
         current_device_id = device.device_id
 
@@ -94,6 +92,9 @@ async def device_ws(ws: WebSocket):
                     logger.warning(
                         f"WS: No replication entry found for Device={current_device_id}, Chunk={chunk_id}"
                     )
+            elif msg_type == "CHUNK_STORE_FAILED":
+                chunk_id = msg.get("chunk_id")
+                print(f"Chunk_id:{chunk_id} storage failed")
 
             else:
                 logger.warning(

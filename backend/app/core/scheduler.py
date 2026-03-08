@@ -17,7 +17,6 @@ async def offline_monitor_loop():
         finally:
             db.close()
 
-            import asyncio
 
 
 async def repair_loop():
@@ -25,7 +24,7 @@ async def repair_loop():
         db = SessionLocal()
 
         try:
-            repair_under_replicated_chunks(db)
+            await repair_under_replicated_chunks(db)
         finally:
             db.close()
 

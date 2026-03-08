@@ -1,9 +1,9 @@
 import asyncio
 from app.models.chunk_replication import ChunkReplication
 from app.services.plan_replication import plan_replication
-
+from app.core.constants import SERVER_BASE_URL
 # MUST include http:// or the phone's request will fail
-SERVER_IP = "http://10.70.222.130:8000"  
+# SERVER_IP = "http://10.70.222.130:8000"  
 
 async def distribute_chunk(db, chunk, manager):
     # 1. Plan the replication (This adds rows to ChunkReplication)
@@ -29,7 +29,7 @@ async def distribute_chunk(db, chunk, manager):
                 command_type="DOWNLOAD_CHUNK",
                 data={
                     "chunk_id": chunk.chunk_id,
-                    "download_url": f"{SERVER_IP}/chunks/{chunk.chunk_id}/download",
+                    "download_url": f"{SERVER_BASE_URL}/chunks/{chunk.chunk_id}/download",
                     "expected_hash": chunk.chunk_hash
                 }
             )

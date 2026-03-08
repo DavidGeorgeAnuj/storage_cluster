@@ -1,14 +1,17 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Request
 from app.api.ws.devices import device_ws
 import asyncio
 from contextlib import asynccontextmanager
 
 from app.core.scheduler import offline_monitor_loop
-from app.core.repair_loop import repair_loop   # <-- add this
+from app.core.scheduler import repair_loop   # <-- add this
 
 from app.api.routes.devices import router as device_router
 from app.api.routes.files import router as file_router
 from app.api.routes import chunks
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 
 @asynccontextmanager
@@ -43,4 +46,9 @@ app.include_router(file_router)
 @app.websocket("/ws/device")
 async def ws_service(websocket : WebSocket):
     await device_ws(websocket)
-    
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print("VALIDATION ERROR:", exc.errors())
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
