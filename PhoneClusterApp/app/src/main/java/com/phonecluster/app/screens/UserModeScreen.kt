@@ -28,6 +28,7 @@ import kotlinx.coroutines.withContext
 import com.phonecluster.app.ml.EmbeddingEngine
 import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
+import com.phonecluster.app.core.SERVER_BASE_URL
 import com.phonecluster.app.ml.SummaryEngine
 import com.phonecluster.app.storage.AppDatabase
 import com.phonecluster.app.storage.FileEntity
@@ -269,7 +270,7 @@ fun UserModeScreen(
                                     try {
                                         // IMPORTANT: Change this to your PC's IP address
 //                                        val baseUrl = "http://10.124.156.168:8000"
-                                        val baseUrl =  "http://10.70.222.130:8000"
+                                        val baseUrl = SERVER_BASE_URL
                                         val userId = 1 // TODO: Get from actual user session
 
                                         val fileId = withContext(Dispatchers.IO) {

@@ -1,5 +1,6 @@
 package com.phonecluster.app.utils.heartbeat
 
+import android.util.Log
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -41,10 +42,12 @@ object HeartbeatHttpClient {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                // intentionally ignored
+                Log.e("Heartbeat", "Failed", e)
             }
 
             override fun onResponse(call: Call, response: Response) {
+                Log.d("Heartbeat", "code=${response.code}")
+                response.body?.string()?.let { Log.d("Heartbeat", it) }
                 response.close()
             }
         })

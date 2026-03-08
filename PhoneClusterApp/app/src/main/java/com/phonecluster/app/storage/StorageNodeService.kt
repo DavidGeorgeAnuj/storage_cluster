@@ -6,6 +6,8 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.phonecluster.app.R
+import com.phonecluster.app.core.SERVER_BASE_URL
+import com.phonecluster.app.core.SERVER_IP
 import com.phonecluster.app.utils.heartbeat.HeartbeatManager
 import com.phonecluster.app.utils.websocket.WebSocketManager
 
@@ -35,15 +37,15 @@ class StorageNodeService : Service() {
         if (deviceId != -1) {
             HeartbeatManager.start(
                 context = this,
-                serverBaseUrl = "http://10.70.222.130:8000",
-                serverIp = "10.70.222.130",
+                serverBaseUrl = SERVER_BASE_URL,
+                serverIp = SERVER_IP,
                 deviceId = deviceId,
                 mode = "Cluster"
             )
 
             WebSocketManager.connect(
                 context = this,
-                serverIp = "10.70.222.130"
+                serverIp = SERVER_IP
             )
         }
 
