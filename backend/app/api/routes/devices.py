@@ -9,6 +9,8 @@ from app.models.chunk import Chunk
 from app.models.device import Device
 from app.models.file import File as FileModel   # Avoid name conflict with fastapi 'File'
 from app.models.chunk import Chunk             
+from sqlalchemy import func
+from app.models.chunk_replication import ChunkReplication
 
 from app.services.registration import register_device
 from app.services.distribute_chunk import distribute_chunk
@@ -146,3 +148,54 @@ def heartbeat_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+@router.get("/cluster/status")
+def get_cluster_status(db: Session = Depends(get_db)):
+
+    # ----- DEVICE STATUS -----
+    devices = db.query(Device).all()
+
+    device_list = []
+    for d in devices:
+        device_list.append({
+            "device_id": d.device_id,
+            "status": d.status,
+            "mode": d.mode,
+            "available_storage": d.available_storage,
+            "last_heartbeat": d.last_heartbeat
+        })
+
+    # ----- FILES -----
+    files = db.query(FileModel).all()
+
+    file_list = []
+    for f in files:
+        file_list.append({
+            "file_id": f.file_id,
+            "file_name": f.file_name,
+            "num_chunks": f.num_chunks,
+            "file_size": f.file_size
+        })
+
+    # ----- CHUNK REPLICATION STATS -----
+    chunk_stats = (
+        db.query(
+            ChunkReplication.replica_status,
+            func.count()
+        )
+        .group_by(ChunkReplication.replica_status)
+        .all()
+    )
+
+    replica_summary = {
+        status: count for status, count in chunk_stats
+    }
+
+    # ----- TOTAL CHUNKS -----
+    total_chunks = db.query(func.count(Chunk.chunk_id)).scalar()
+
+    return {
+        "devices": device_list,
+        "files": file_list,
+        "replica_summary": replica_summary,
+        "total_chunks": total_chunks
+    }
