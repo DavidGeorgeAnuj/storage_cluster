@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
-from app.core.database import get_db, SessionLocal
+from app.core.database import get_db
 from app.core.connection_manager import manager
 
 from app.models.chunk import Chunk
@@ -20,9 +20,6 @@ import hashlib
 from pydantic import BaseModel
 from typing import List, Optional 
 from datetime import datetime, timezone
-from pathlib import Path
-from fastapi.responses import FileResponse
-import os
 
 from app.core.constants import TEMP_CHUNK_DIR
 
@@ -125,7 +122,7 @@ async def upload_chunk_data(
     # Now that this specific chunk is safe on the server, 
     # we tell the cluster to come get it.
     print("Using manager:", manager)
-    await distribute_chunk(db, db_chunk, manager)
+    await distribute_chunk(db, db_chunk.chunk_id, manager)
 
     return {"status": "success", "chunk_id": db_chunk.chunk_id}
 

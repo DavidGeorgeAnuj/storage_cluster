@@ -6,7 +6,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
-
+import android.content.Context
+import android.util.Log
 class FileRepository {
 
     private val client = OkHttpClient()
@@ -15,7 +16,11 @@ class FileRepository {
         private const val ENCRYPTION_PASSWORD = "mypassword123"
     }
 
-    suspend fun downloadFile(fileId: Long) = withContext(Dispatchers.IO) {
+    suspend fun downloadFile(
+        context: Context,
+        fileId: Long,
+        fileName: String
+    ) = withContext(Dispatchers.IO) {
 
         val request = Request.Builder()
             .url("$SERVER_BASE_URL/files/$fileId/download")
@@ -37,11 +42,37 @@ class FileRepository {
             aad = byteArrayOf()
         )
 
-        saveFileLocally(fileId, decryptedBytes)
+        saveFileLocally(context, fileName, decryptedBytes)
     }
 
-    private fun saveFileLocally(fileId: Long, data: ByteArray) {
-        val file = File("/storage/emulated/0/Download/file_$fileId.bin")
+    private fun saveFileLocally(context: Context, fileName: String, data: ByteArray) {
+
+        val downloadsDir = File("/storage/emulated/0/Download")
+
+        if (!downloadsDir.exists()) {
+            downloadsDir.mkdirs()
+        }
+
+        val file = File(downloadsDir, fileName)
+
         file.writeBytes(data)
+
+        Log.d("DOWNLOAD_DEBUG", "File saved: ${file.absolutePath}")
+
+        DownloadNotificationHelper.showDownloadComplete(context, file)
+    }
+
+    suspend fun deleteFile(fileId: Long) = withContext(Dispatchers.IO) {
+
+        val request = Request.Builder()
+            .url("$SERVER_BASE_URL/files/$fileId")
+            .delete()
+            .build()
+
+        val response = client.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            throw RuntimeException("Delete failed: ${response.code}")
+        }
     }
 }
